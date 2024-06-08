@@ -1,0 +1,17 @@
+[package]
+name = "eas-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+alloy = { git = "https://github.com/alloy-rs/alloy", version = "0.1.0", features = ["contract", "provider-http"] }
+async-trait = "0.1.80"
+axum = "0.7.5"
+dotenv = "0.15.0"
+eyre = "0.6"
+serde = { version = "1.0", features = ["derive"] }
+strum = "0.26"
+thiserror = "1.0"
+tokio = { version = "1", features = ["rt-multi-thread"] }
+tracing-subscriber = "0.3.18"
+reqwest = "0.12.4"
