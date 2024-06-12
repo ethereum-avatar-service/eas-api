@@ -15,3 +15,4 @@ thiserror = "1.0"
 tokio = { version = "1", features = ["rt-multi-thread"] }
 tracing-subscriber = "0.3.18"
 reqwest = "0.12.4"
+log = "0.4.21"

@@ -3,6 +3,7 @@ use std::sync::LazyLock;
 use alloy::primitives::Address;
 
 use crate::services::rpc::Client;
+use crate::supported_networks::SupportedNetworks;
 
 static POLYGON_RPC_URL: LazyLock<String> = LazyLock::new(|| {
     std::env::var("POLYGON_RPC_URL").expect("POLYGON_RPC_URL not set")
@@ -15,5 +16,5 @@ static POLYGON_AVATAR_SERVICE: LazyLock<String> = LazyLock::new(|| {
 pub fn new() -> Client {
     let contract_address = POLYGON_AVATAR_SERVICE.parse::<Address>().unwrap();
     
-    Client::new(&POLYGON_RPC_URL, contract_address).unwrap()
+    Client::new(SupportedNetworks::Polygon, &POLYGON_RPC_URL, contract_address).unwrap()
 }

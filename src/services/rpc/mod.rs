@@ -1,12 +1,14 @@
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 
 use alloy::primitives::{Address, FixedBytes, U256};
 use alloy::providers::{ProviderBuilder, ReqwestProvider};
 use alloy::sol;
 use thiserror::Error;
 
-use crate::models::avatar::{AvatarInfo, AvatarInfoWithMetadata, AvatarMetadata};
+use crate::models::avatar::{AvatarCollection, AvatarInfo, AvatarInfoWithMetadata, AvatarMetadata};
 use crate::models::nft::NftMetadata;
+use crate::services::avatar::AvatarServiceCache;
+use crate::supported_networks::SupportedNetworks;
 
 pub mod sepolia;
 pub mod polygon;
@@ -28,16 +30,17 @@ sol!(
 );
 
 pub struct Client {
+    chain: SupportedNetworks,
     provider: ReqwestProvider,
     avatar_service: Address
 }
 
 impl Client {
     #[allow(clippy::missing_errors_doc)]
-    pub fn new(rpc_url: &str, avatar_service: Address) -> eyre::Result<Self> {
+    pub fn new(chain: SupportedNetworks, rpc_url: &str, avatar_service: Address) -> eyre::Result<Self> {
         let provider = ProviderBuilder::new().on_http(rpc_url.parse()?);
 
-        Ok(Self { provider, avatar_service })
+        Ok(Self { chain, provider, avatar_service })
     }
 
     #[allow(clippy::missing_errors_doc)]
@@ -50,9 +53,16 @@ impl Client {
     }
 
     #[allow(clippy::missing_errors_doc)]
-    pub async fn get_avatar_info_with_metadata(&self, address: &Address) -> eyre::Result<AvatarInfoWithMetadata> {
+    pub async fn get_avatar_info_with_metadata(&self, address: &Address, cache: Arc<AvatarServiceCache>) -> eyre::Result<AvatarInfoWithMetadata> {
         let avatar_info = self.get_avatar_info(address).await?;
-        let avatar_metadata = self.get_avatar_metadata(&avatar_info.avatar.token_address, avatar_info.avatar.token_id).await?;
+        
+        let mut avatar_metadata = self.get_avatar_metadata(&avatar_info.avatar.token_address, avatar_info.avatar.token_id).await?;
+        
+        if let Some(network) = cache.verified_collections.read().await.get(&self.chain) {
+            if let Some(collection) = network.get(&avatar_info.avatar.token_address) {
+                avatar_metadata.collection = Some(collection.clone());
+            }
+        }
 
         Ok(AvatarInfoWithMetadata {
             avatar: avatar_info.avatar,
@@ -173,9 +183,13 @@ impl Client {
 
         Ok(AvatarMetadata {
             image: nft_metadata.image,
-            author: None,
-            website: None,
-            verified: false,
+            collection: Some(AvatarCollection {
+                name: None,
+                author: None,
+                website: None,
+                opensea: None,
+                verified: false,
+            })
         })
     }
 
@@ -184,9 +198,13 @@ impl Client {
         if *token_address == Address::ZERO {
             return Ok(AvatarMetadata {
                 image: DEFAULT_AVATAR_IMAGE.to_string(),
-                author: None,
-                website: None,
-                verified: false,
+                collection: Some(AvatarCollection {
+                    name: None,
+                    author: None,
+                    website: None,
+                    opensea: None,
+                    verified: false,
+                })
             })
         }
         

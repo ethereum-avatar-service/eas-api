@@ -1,6 +1,7 @@
+use serde::Serialize;
 use strum::{EnumIter, IntoEnumIterator};
 
-#[derive(Debug, PartialEq, Eq, Hash, EnumIter)]
+#[derive(Serialize, Debug, PartialEq, Eq, Hash, EnumIter, Clone)]
 pub enum SupportedNetworks {
     Sepolia,
     Polygon
