@@ -1,10 +1,12 @@
 use alloy::primitives::{Address, U256};
-use serde::Serialize;
+use serde::{Serialize, Serializer};
+
 use crate::services;
 
 #[derive(Serialize)]
 pub struct Avatar {
     pub token_address: Address,
+    #[serde(serialize_with = "serialize_u256_as_decimal")]
     pub token_id: U256
 }
 
@@ -15,6 +17,13 @@ impl From<services::rpc::AvatarService::Avatar> for Avatar {
             token_id: value.tokenId,
         }
     }
+}
+
+fn serialize_u256_as_decimal<S>(value: &U256, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+{
+    serializer.serialize_str(&value.to_string())
 }
 
 #[allow(clippy::module_name_repetitions)]
