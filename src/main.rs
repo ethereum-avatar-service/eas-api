@@ -5,6 +5,7 @@ use axum::{
     Router,
 };
 use dotenv::dotenv;
+use log::info;
 use tower_http::cors::{Any, CorsLayer};
 
 use eas_api::handlers;
@@ -35,5 +36,8 @@ async fn main() {
         .layer(cors);
 
     let listener = tokio::net::TcpListener::bind(&*BIND_ADDRESS).await.unwrap();
+
+    info!(target: "API", "Started on: {}", *BIND_ADDRESS);
+    
     axum::serve(listener, app).await.unwrap();
 }
