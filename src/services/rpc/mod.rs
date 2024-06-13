@@ -1,4 +1,5 @@
 use std::sync::{Arc, LazyLock};
+use std::time::Duration;
 
 use alloy::primitives::{Address, FixedBytes, U256};
 use alloy::providers::{ProviderBuilder, ReqwestProvider};
@@ -158,11 +159,16 @@ impl Client {
             return Err(Error::EmptyTokenUri.into());
         }
 
+        let reqwest_client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(2))
+            .build()
+            .unwrap();
+
         let nft_metadata = loop {
             let token_uri = token_uri.replace("ipfs://", "");
             let url = format!("{}{}", *IPFS_GATEWAY, token_uri);
 
-            match reqwest::get(&url).await {
+            match reqwest_client.get(&url).send().await {
                 Ok(response) => match response.json::<NftMetadata>().await {
                     Ok(metadata) => break Ok(metadata),
                     Err(error) => {
@@ -203,7 +209,7 @@ impl Client {
                     author: None,
                     website: None,
                     opensea: None,
-                    verified: false,
+                    verified: true,
                 })
             })
         }
