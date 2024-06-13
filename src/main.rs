@@ -4,6 +4,7 @@ use axum::{
     Router,
 };
 use dotenv::dotenv;
+use tower_http::cors::{Any, CorsLayer};
 
 use eas_api::handlers;
 use eas_api::services::avatar::AvatarService;
@@ -19,11 +20,14 @@ async fn main() {
     
     // Load verified collections from GitHub: https://github.com/ethereum-avatar-service/eas-api-whitelist
     avatar_service.reload_verified_collections().await;
+    
+    let cors = CorsLayer::new().allow_origin(Any);
 
     let app = Router::new()
         .route("/avatar/:wallet_address", get(handlers::avatar::get))
         .route("/whitelist", get(handlers::whitelist::get))
-        .with_state(avatar_service);
+        .with_state(avatar_service)
+        .layer(cors);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
