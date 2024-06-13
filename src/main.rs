@@ -1,4 +1,5 @@
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
+
 use axum::{
     routing::get,
     Router,
@@ -9,18 +10,22 @@ use tower_http::cors::{Any, CorsLayer};
 use eas_api::handlers;
 use eas_api::services::avatar::AvatarService;
 
+static BIND_ADDRESS: LazyLock<String> = LazyLock::new(|| {
+    std::env::var("BIND_ADDRESS").expect("BIND_ADDRESS not set")
+});
+
 #[tokio::main]
 async fn main() {
     dotenv().ok();
     
     // initialize tracing
     tracing_subscriber::fmt::init();
-    
+
     let avatar_service = Arc::new(AvatarService::new());
-    
+
     // Load verified collections from GitHub: https://github.com/ethereum-avatar-service/eas-api-whitelist
     avatar_service.reload_verified_collections().await;
-    
+
     let cors = CorsLayer::new().allow_origin(Any);
 
     let app = Router::new()
@@ -29,6 +34,6 @@ async fn main() {
         .with_state(avatar_service)
         .layer(cors);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = tokio::net::TcpListener::bind(&*BIND_ADDRESS).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
