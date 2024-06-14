@@ -1,4 +1,4 @@
-use std::sync::{Arc, LazyLock};
+use std::sync::Arc;
 use std::time::Duration;
 
 use alloy::primitives::{Address, FixedBytes, U256};
@@ -14,9 +14,12 @@ use crate::supported_networks::SupportedNetworks;
 pub mod sepolia;
 pub mod polygon;
 
-static IPFS_GATEWAY: LazyLock<String> = LazyLock::new(|| {
-    std::env::var("IPFS_GATEWAY").expect("IPFS_GATEWAY not set")
-});
+const IPFS_GATEWAYS: [&str; 4] = [
+    "https://ipfs.io/ipfs/",
+    "https://reddit.infura-ipfs.io/ipfs/",
+    "https://cf-ipfs.com/ipfs/",
+    "https://gateway.pinata.cloud/ipfs/",
+];
 
 sol!(
     #[allow(missing_docs)]
@@ -171,7 +174,7 @@ impl Client {
 
     #[allow(clippy::missing_errors_doc)]
     async fn get_nft_metadata_from_token_uri(&self, token_uri: &str) -> eyre::Result<NftMetadata> {
-        const MAX_RETRIES: u8 = 1;
+        const MAX_RETRIES: usize = 3;
 
         let mut retries = 0;
         
@@ -185,8 +188,9 @@ impl Client {
             .unwrap();
 
         let nft_metadata = loop {
+            let gateway = IPFS_GATEWAYS[retries % IPFS_GATEWAYS.len()];
             let token_uri = token_uri.replace("ipfs://", "");
-            let url = format!("{}{}", *IPFS_GATEWAY, token_uri);
+            let url = format!("{gateway}{token_uri}");
 
             match reqwest_client.get(&url).send().await {
                 Ok(response) => match response.json::<NftMetadata>().await {
