@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Default, Deserialize, Clone)]
 pub struct NftMetadata {
-    pub image: String
+    pub image: Option<String>
 }

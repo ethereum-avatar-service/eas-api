@@ -43,7 +43,7 @@ impl From<services::rpc::AvatarService::AvatarInfo> for AvatarInfo {
 }
 
 #[allow(clippy::module_name_repetitions)]
-#[derive(Serialize, Clone)]
+#[derive(Default, Serialize, Clone)]
 pub struct AvatarCollection {
     pub name: Option<String>,
     pub author: Option<String>,
@@ -53,9 +53,9 @@ pub struct AvatarCollection {
 }
 
 #[allow(clippy::module_name_repetitions)]
-#[derive(Serialize)]
+#[derive(Default, Serialize)]
 pub struct AvatarMetadata {
-    pub image: String,
+    pub image: Option<String>,
     pub collection: Option<AvatarCollection>
 }
 

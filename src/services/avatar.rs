@@ -5,14 +5,19 @@ use alloy::primitives::Address;
 use tokio::sync::RwLock;
 
 use crate::models::avatar::AvatarCollection;
+use crate::models::nft::NftMetadata;
 use crate::models::whitelist;
 use crate::response::avatar::AvatarInfoWithMetadataResponse;
 use crate::services::rpc;
 use crate::supported_networks::SupportedNetworks;
 
+pub type VerifiedCollections = HashMap<SupportedNetworks, HashMap<Address, AvatarCollection>>;
+pub type IpfsCache = HashMap<String, NftMetadata>;
+
 #[allow(clippy::module_name_repetitions)]
 pub struct AvatarServiceCache {
-    pub verified_collections: RwLock<HashMap<SupportedNetworks, HashMap<Address, AvatarCollection>>>
+    pub verified_collections: RwLock<VerifiedCollections>,
+    pub ipfs: Arc<RwLock<IpfsCache>>
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -24,7 +29,8 @@ impl AvatarService {
     pub fn new() -> Self {
         Self {
             cache: Arc::new(AvatarServiceCache {
-                verified_collections: RwLock::default()
+                verified_collections: RwLock::default(),
+                ipfs: Arc::new(RwLock::default()),
             }),
         }
     }

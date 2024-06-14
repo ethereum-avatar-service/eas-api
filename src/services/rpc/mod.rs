@@ -6,17 +6,13 @@ use alloy::providers::{ProviderBuilder, ReqwestProvider};
 use alloy::sol;
 use thiserror::Error;
 
-use crate::models::avatar::{AvatarCollection, AvatarInfo, AvatarInfoWithMetadata, AvatarMetadata};
+use crate::models::avatar::{AvatarInfo, AvatarInfoWithMetadata, AvatarMetadata};
 use crate::models::nft::NftMetadata;
 use crate::services::avatar::AvatarServiceCache;
 use crate::supported_networks::SupportedNetworks;
 
 pub mod sepolia;
 pub mod polygon;
-
-static DEFAULT_AVATAR_IMAGE: LazyLock<String> = LazyLock::new(|| {
-    std::env::var("DEFAULT_AVATAR_IMAGE").expect("DEFAULT_AVATAR_IMAGE not set")
-});
 
 static IPFS_GATEWAY: LazyLock<String> = LazyLock::new(|| {
     std::env::var("IPFS_GATEWAY").expect("IPFS_GATEWAY not set")
@@ -56,8 +52,32 @@ impl Client {
     #[allow(clippy::missing_errors_doc)]
     pub async fn get_avatar_info_with_metadata(&self, address: &Address, cache: Arc<AvatarServiceCache>) -> eyre::Result<AvatarInfoWithMetadata> {
         let avatar_info = self.get_avatar_info(address).await?;
+
+        let nft_metadata = {
+            if avatar_info.avatar.token_address == Address::ZERO {
+                NftMetadata::default()
+            } else {
+                let token_uri = self.get_token_uri(&avatar_info.avatar.token_address, avatar_info.avatar.token_id).await?;
+
+                let opt_cached_metadata = cache.ipfs.read().await.get(&token_uri).cloned();
+                
+                // Try cache first
+                if let Some(metadata) = opt_cached_metadata { 
+                    metadata
+                } else if let Ok(metadata) = self.get_nft_metadata_from_token_uri(&token_uri).await {
+                    // Cache ipfs result
+                    cache.ipfs.write().await.insert(token_uri, metadata.clone());
+                    metadata
+                } else {
+                    NftMetadata::default()
+                }
+            }
+        };
         
-        let mut avatar_metadata = self.get_avatar_metadata(&avatar_info.avatar.token_address, avatar_info.avatar.token_id).await?;
+        let mut avatar_metadata = AvatarMetadata {
+            image: nft_metadata.image,
+            ..Default::default()
+        };
         
         if let Some(network) = cache.verified_collections.read().await.get(&self.chain) {
             if let Some(collection) = network.get(&avatar_info.avatar.token_address) {
@@ -150,8 +170,8 @@ impl Client {
     }
 
     #[allow(clippy::missing_errors_doc)]
-    async fn get_metadata_from_token_uri(&self, token_uri: &str) -> eyre::Result<AvatarMetadata> {
-        const MAX_RETRIES: u8 = 4;
+    async fn get_nft_metadata_from_token_uri(&self, token_uri: &str) -> eyre::Result<NftMetadata> {
+        const MAX_RETRIES: u8 = 1;
 
         let mut retries = 0;
         
@@ -187,35 +207,7 @@ impl Client {
             }
         }?;
 
-        Ok(AvatarMetadata {
-            image: nft_metadata.image,
-            collection: Some(AvatarCollection {
-                name: None,
-                author: None,
-                website: None,
-                opensea: None,
-                verified: false,
-            })
-        })
-    }
-
-    #[allow(clippy::missing_errors_doc)]
-    pub async fn get_avatar_metadata(&self, token_address: &Address, token_id: U256) -> eyre::Result<AvatarMetadata> {
-        if *token_address == Address::ZERO {
-            return Ok(AvatarMetadata {
-                image: DEFAULT_AVATAR_IMAGE.to_string(),
-                collection: Some(AvatarCollection {
-                    name: None,
-                    author: None,
-                    website: None,
-                    opensea: None,
-                    verified: true,
-                })
-            })
-        }
-        
-        let token_uri = self.get_token_uri(token_address, token_id).await?;
-        self.get_metadata_from_token_uri(&token_uri).await
+        Ok(nft_metadata)
     }
 }
 
@@ -248,8 +240,8 @@ mod tests {
 
         let token_uri = "ipfs://QmNfoE5tQaBGiXSNdyRDresLC27QCHNwP75zwuXfntdBmM/1.json";
 
-        let metadata = client.get_metadata_from_token_uri(token_uri).await.unwrap();
+        let metadata = client.get_nft_metadata_from_token_uri(token_uri).await.unwrap();
 
-        assert_eq!(metadata.image, "ipfs://Qmdzin1M19QMnVUzzvNbvPKTrDezX8oPVhJj4H6nx9x7pF");
+        assert_eq!(metadata.image, Some("ipfs://Qmdzin1M19QMnVUzzvNbvPKTrDezX8oPVhJj4H6nx9x7pF".to_string()));
     }
 }
