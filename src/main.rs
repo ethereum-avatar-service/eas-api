@@ -22,7 +22,7 @@ async fn main() {
     // initialize tracing
     tracing_subscriber::fmt::init();
 
-    let avatar_service = Arc::new(AvatarService::new());
+    let avatar_service = Arc::new(AvatarService::default());
 
     // Load verified collections from GitHub: https://github.com/ethereum-avatar-service/eas-api-whitelist
     avatar_service.reload_verified_collections().await;

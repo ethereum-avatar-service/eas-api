@@ -60,7 +60,26 @@ impl Client {
             if avatar_info.avatar.token_address == Address::ZERO {
                 NftMetadata::default()
             } else {
-                let token_uri = self.get_token_uri(&avatar_info.avatar.token_address, avatar_info.avatar.token_id).await?;
+                let maybe_cached_token_uri = cache.token_uris.read().await
+                    .get(&self.chain)
+                    .and_then(|map| {
+                        map.get(&(avatar_info.avatar.token_address, avatar_info.avatar.token_id)).cloned()
+                    });
+
+                // Try uri cache first
+                let token_uri = if let Some(uri) = maybe_cached_token_uri {
+                    uri
+                } else {
+                    let uri = self.get_token_uri(&avatar_info.avatar.token_address, avatar_info.avatar.token_id).await?;
+
+                    // Update uri cache
+                    cache.token_uris.write().await
+                        .entry(self.chain.clone())
+                        .or_default()
+                        .insert((avatar_info.avatar.token_address, avatar_info.avatar.token_id), uri.clone());
+
+                    uri
+                };
 
                 let opt_cached_metadata = cache.ipfs.read().await.get(&token_uri).cloned();
                 

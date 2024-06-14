@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use alloy::primitives::Address;
+use alloy::primitives::{Address, U256};
 use tokio::sync::RwLock;
 
 use crate::models::avatar::AvatarCollection;
@@ -13,28 +13,23 @@ use crate::supported_networks::SupportedNetworks;
 
 pub type VerifiedCollections = HashMap<SupportedNetworks, HashMap<Address, AvatarCollection>>;
 pub type IpfsCache = HashMap<String, NftMetadata>;
+pub type TokenUriCache = HashMap<SupportedNetworks, HashMap<(Address, U256), String>>;
 
 #[allow(clippy::module_name_repetitions)]
+#[derive(Default)]
 pub struct AvatarServiceCache {
     pub verified_collections: RwLock<VerifiedCollections>,
-    pub ipfs: Arc<RwLock<IpfsCache>>
+    pub ipfs: Arc<RwLock<IpfsCache>>,
+    pub token_uris: Arc<RwLock<TokenUriCache>>
 }
 
 #[allow(clippy::module_name_repetitions)]
+#[derive(Default)]
 pub struct AvatarService {
     pub cache: Arc<AvatarServiceCache>
 }
 
 impl AvatarService {
-    pub fn new() -> Self {
-        Self {
-            cache: Arc::new(AvatarServiceCache {
-                verified_collections: RwLock::default(),
-                ipfs: Arc::new(RwLock::default()),
-            }),
-        }
-    }
-
     pub async fn reload_verified_collections(&self) {
         let result = reqwest::get("https://raw.githubusercontent.com/ethereum-avatar-service/eas-api-whitelist/main/collections.json").await;
 
@@ -55,9 +50,9 @@ impl AvatarService {
                                 let entry = verified_collections.entry(chain).or_default();
 
                                 entry.insert(address, AvatarCollection {
-                                    name: Some(collection.name.to_string()),
-                                    author: Some(collection.author.to_string()),
-                                    website: Some(collection.website.to_string()),
+                                    name: Some(collection.name.clone()),
+                                    author: Some(collection.author.clone()),
+                                    website: Some(collection.website.clone()),
                                     opensea: collection.opensea.clone(),
                                     verified: true,
                                 });
