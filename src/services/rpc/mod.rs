@@ -110,6 +110,7 @@ impl Client {
         Ok(AvatarInfoWithMetadata {
             avatar: avatar_info.avatar,
             owned: avatar_info.owned,
+            uri: avatar_info.uri,
             avatar_metadata,
         })
     }

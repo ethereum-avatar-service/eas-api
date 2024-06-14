@@ -30,7 +30,8 @@ fn serialize_u256_as_decimal<S>(value: &U256, serializer: S) -> Result<S::Ok, S:
 #[derive(Serialize)]
 pub struct AvatarInfo {
     pub avatar: Avatar,
-    pub owned: bool
+    pub owned: bool,
+    pub uri: String
 }
 
 impl From<services::rpc::AvatarService::AvatarInfo> for AvatarInfo {
@@ -38,6 +39,7 @@ impl From<services::rpc::AvatarService::AvatarInfo> for AvatarInfo {
         Self {
             avatar: Avatar::from(value.avatar),
             owned: value.owned,
+            uri: value.uri,
         }
     }
 }
@@ -64,5 +66,6 @@ pub struct AvatarMetadata {
 pub struct AvatarInfoWithMetadata {
     pub avatar: Avatar,
     pub owned: bool,
+    pub uri: String,
     pub avatar_metadata: AvatarMetadata
 }
