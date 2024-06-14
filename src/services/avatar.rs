@@ -4,7 +4,7 @@ use std::sync::Arc;
 use alloy::primitives::{Address, U256};
 use tokio::sync::RwLock;
 
-use crate::models::avatar::AvatarCollection;
+use crate::models::avatar::{AvatarCollection, AvatarType};
 use crate::models::nft::NftMetadata;
 use crate::models::whitelist;
 use crate::response::avatar::AvatarInfoWithMetadataResponse;
@@ -78,14 +78,14 @@ impl AvatarService {
             let provider = rpc::sepolia::new();
             let maybe_avatar_info = provider.get_avatar_info_with_metadata(address, self.cache.clone()).await.ok();
 
-            response.networks.insert("sepolia".to_string(), maybe_avatar_info);
+            response.networks.insert("sepolia".to_string(), [(AvatarType::Flat, maybe_avatar_info)].into());
         }
 
         if networks.contains(&SupportedNetworks::Polygon) {
             let provider = rpc::polygon::new();
             let maybe_avatar_info = provider.get_avatar_info_with_metadata(address, self.cache.clone()).await.ok();
 
-            response.networks.insert("polygon".to_string(), maybe_avatar_info);
+            response.networks.insert("polygon".to_string(), [(AvatarType::Flat, maybe_avatar_info)].into());
         }
 
         Ok(response)

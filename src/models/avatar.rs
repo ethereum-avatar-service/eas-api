@@ -69,3 +69,12 @@ pub struct AvatarInfoWithMetadata {
     pub uri: String,
     pub avatar_metadata: AvatarMetadata
 }
+
+#[allow(clippy::module_name_repetitions)]
+#[derive(Serialize, Debug, Eq, PartialEq, Hash)]
+pub enum AvatarType {
+    #[serde(rename = "flat")]
+    Flat,
+    #[serde(rename = "composite")]
+    Composite
+}
