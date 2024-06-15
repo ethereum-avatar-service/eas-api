@@ -2,6 +2,7 @@ use std::sync::{Arc, LazyLock};
 
 use axum::{
     routing::get,
+    routing::post,
     Router,
 };
 use dotenv::dotenv;
@@ -32,6 +33,7 @@ async fn main() {
     let app = Router::new()
         .route("/avatar/:wallet_address", get(handlers::avatar::get))
         .route("/whitelist", get(handlers::whitelist::get))
+        .route("/whitelist/reload", post(handlers::whitelist::reload))
         .with_state(avatar_service)
         .layer(cors);
 
