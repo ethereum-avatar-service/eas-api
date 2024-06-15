@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
-use strum::{EnumIter, IntoEnumIterator};
+use strum::{Display, EnumIter, IntoEnumIterator};
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Hash, EnumIter, Clone)]
+#[derive(Deserialize, Serialize, Debug, Display, PartialEq, Eq, Hash, EnumIter, Clone)]
 pub enum SupportedNetworks {
+    Ethereum,
     Sepolia,
     Polygon
 }

@@ -13,6 +13,7 @@ use crate::supported_networks::SupportedNetworks;
 
 pub mod sepolia;
 pub mod polygon;
+pub mod ethereum;
 
 const IPFS_GATEWAYS: [&str; 4] = [
     "https://ipfs.io/ipfs/",

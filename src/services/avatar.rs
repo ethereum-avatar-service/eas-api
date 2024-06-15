@@ -42,6 +42,7 @@ impl AvatarService {
                         for collection in network_collections {
                             if let Ok(address) = collection.contract.parse::<Address>() {
                                 let chain = match network.to_lowercase().as_str() {
+                                    "mainnet" | "ethereum" => SupportedNetworks::Ethereum,
                                     "sepolia" => SupportedNetworks::Sepolia,
                                     "polygon" => SupportedNetworks::Polygon,
                                     _ => { continue; }
@@ -74,18 +75,16 @@ impl AvatarService {
 
         let networks: Vec<SupportedNetworks> = networks.into_iter().collect();
 
-        if networks.contains(&SupportedNetworks::Sepolia) {
-            let provider = rpc::sepolia::new();
+        for network in networks {
+            let provider = match network {
+                SupportedNetworks::Ethereum => rpc::ethereum::new(),
+                SupportedNetworks::Sepolia => rpc::sepolia::new(),
+                SupportedNetworks::Polygon => rpc::polygon::new()
+            };
+            
             let maybe_avatar_info = provider.get_avatar_info_with_metadata(address, self.cache.clone()).await.ok();
 
-            response.networks.insert("sepolia".to_string(), [(AvatarType::Flat, maybe_avatar_info)].into());
-        }
-
-        if networks.contains(&SupportedNetworks::Polygon) {
-            let provider = rpc::polygon::new();
-            let maybe_avatar_info = provider.get_avatar_info_with_metadata(address, self.cache.clone()).await.ok();
-
-            response.networks.insert("polygon".to_string(), [(AvatarType::Flat, maybe_avatar_info)].into());
+            response.networks.insert(network.to_string().to_lowercase(), [(AvatarType::Flat, maybe_avatar_info)].into());
         }
 
         Ok(response)
