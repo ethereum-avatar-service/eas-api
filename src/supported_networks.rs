@@ -5,7 +5,8 @@ use strum::{Display, EnumIter, IntoEnumIterator};
 pub enum SupportedNetworks {
     Ethereum,
     Sepolia,
-    Polygon
+    Polygon,
+    Base
 }
 
 impl SupportedNetworks {

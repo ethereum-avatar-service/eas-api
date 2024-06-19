@@ -45,6 +45,7 @@ impl AvatarService {
                                     "mainnet" | "ethereum" => SupportedNetworks::Ethereum,
                                     "sepolia" => SupportedNetworks::Sepolia,
                                     "polygon" => SupportedNetworks::Polygon,
+                                    "base" => SupportedNetworks::Base,
                                     _ => { continue; }
                                 };
 
@@ -79,7 +80,8 @@ impl AvatarService {
             let provider = match network {
                 SupportedNetworks::Ethereum => rpc::ethereum::new(),
                 SupportedNetworks::Sepolia => rpc::sepolia::new(),
-                SupportedNetworks::Polygon => rpc::polygon::new()
+                SupportedNetworks::Polygon => rpc::polygon::new(),
+                SupportedNetworks::Base => rpc::base::new(),
             };
             
             let maybe_avatar_info = provider.get_avatar_info_with_metadata(address, self.cache.clone()).await.ok();
@@ -88,5 +90,9 @@ impl AvatarService {
         }
 
         Ok(response)
+    }
+
+    pub async fn listen_contract_events(&self) {
+
     }
 }
